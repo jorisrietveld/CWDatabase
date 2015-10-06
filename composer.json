@@ -1,0 +1,12 @@
+{
+  "name": "jorisrietveld/database",
+  "description": "A simple database solution",
+  "minimum-stability": "dev",
+  "license": "GPLv3",
+  "authors": [
+    {
+      "name": "Joris Rietveld",
+      "email": "jorisrietveld@gmail.com"
+    }
+  ]
+}
