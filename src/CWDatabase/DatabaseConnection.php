@@ -220,6 +220,12 @@ class DatabaseConnection
 		return $this->query( $sql, [ ] );
 	}
 
+	/**
+	 * Insert an data record into the connected database.
+	 *
+	 * @param $table
+	 * @param $values
+	 */
 	public function insert( $table, $values )
 	{
 		$sql = "INSERT INTO {$table} (";
