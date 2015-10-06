@@ -5,7 +5,8 @@
  * Licence: GPLv3
  */
 
-namespace CWSite\Helper;
+namespace CWDatabase\Helper;
+
 
 class Message
 {
@@ -13,7 +14,7 @@ class Message
 	const ERROR_MESSAGE_XML_PARSER    = "ErrorMessage error: Can't parse the error messages xml file.";
 	const ERROR_MESSAGE_UNDEFINED_KEY = "ErrorMessage error: The given key is not found in the error messages xml file.";
 
-	const XML_FILE_PATH = "../../Config/messages.xml";
+	const XML_FILE_PATH = WEBSERVER_ROOT_PATH . "/Config/messages.xml";
 
 	const PLACEHOLDER_START = "{{";
 	const PLACEHOLDER_END   = "}}";
