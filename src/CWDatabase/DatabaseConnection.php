@@ -8,8 +8,10 @@
 namespace CWDatabase;
 
 use CWDatabase\Drivers\DriverFactory;
+use CWDatabase\Helper\Message;
 use CWDatabase\Helper\QueryLogger;
 use CWDatabase\Helper\Arr;
+
 
 class DatabaseConnection
 {
@@ -142,10 +144,9 @@ class DatabaseConnection
 
 		$pdoStatement = $this->connection->prepare( $sql );
 
-		if( count( $parameters ) && $parameters !== false )
+		if( count( $parameters ) )
 		{
 			$pdoStatement = $this->bindValues( $pdoStatement, $parameters );
-
 		}
 
 		if( $pdoStatement->execute() )
@@ -195,7 +196,7 @@ class DatabaseConnection
 	 *
 	 * @return bool|mixed
 	 */
-	public function select( Array $columns, $table, Array $where = [ ], $order = "" )
+	public function select( $table, Array $columns, Array $where = [ ], $order = "" )
 	{
 		$sqlColonsString = "`" . join( "`,`", $columns ) . "`";
 
@@ -204,16 +205,46 @@ class DatabaseConnection
 		// If there there is an where clause.
 		if( count( $where ) )
 		{
-			$sql .= " WHERE " . $where[ 0 ];
+			$sql .= "WHERE " . $where[ 0 ];
 			$valuesWhereClause = $where[ 1 ];
 		}
 
 		// Add the order.
-		$sql .= $order;
+		$sql .= " ORDER BY " . $order;
 
-		return $this->query( $sql, isset( $valuesWhereClause ) );
+		if( isset( $valuesWhereClause ) )
+		{
+			return $this->query( $sql, $valuesWhereClause );
+		}
+
+		return $this->query( $sql, [ ] );
 	}
 
+	public function insert( $table, $values )
+	{
+		$sql = "INSERT INTO {$table} (";
+
+		$columns      = [ ];
+		$boundValues  = [ ];
+		$valuesString = "";
+
+		foreach( $values as $columnName => $value )
+		{
+			$columns[]     = $columnName;
+			$boundValues[] = $value;
+			$valuesString .= "?,";
+		}
+
+		$sql .= "`" . join( "`,`", $columns ) . "`) VALUES ( " . rtrim( $valuesString, "," ) . ");";
+
+		$this->query( $sql, $boundValues );
+	}
+
+	/**
+	 * If the logQuerys property is set to true it will return last query that was send to the database.
+	 * Otherwise it will throw an logic exception.
+	 * @return mixed
+	 */
 	public function getLastQuery()
 	{
 		if( $this->logQuerys )
@@ -222,11 +253,16 @@ class DatabaseConnection
 		}
 		else
 		{
-			throw new \LogicException(  );
+			throw new \LogicException( Message::getMessage( "databaseConnection.exceptions.queryNotLogged" ) );
 		}
 	}
 
-	public function getAllQuerys(  )
+	/**
+	 * If the logQuerys property is set to true it will return all the query's that where send to the database.
+	 * Otherwise it will throw an logic exception.
+	 * @return array
+	 */
+	public function getAllQuerys()
 	{
 		if( $this->logQuerys )
 		{
@@ -234,7 +270,31 @@ class DatabaseConnection
 		}
 		else
 		{
-			throw new \LogicException();
+			throw new \LogicException( Message::getMessage( "databaseConnection.exceptions.queryNotLogged" ) );
 		}
+	}
+
+	/**
+	 * This method will get information about the database in an array.
+	 * @return array
+	 */
+	public function getDatabaseInfo()
+	{
+		$attributes = [
+			"CLIENT_VERSION",
+			"CONNECTION_STATUS",
+			"DRIVER_NAME",
+			"SERVER_INFO",
+			"SERVER_VERSION"
+		];
+
+		$data = [ ];
+
+		foreach( $attributes as $val )
+		{
+			$data[ $val ] = $this->connection->getAttribute( constant( "PDO::ATTR_$val" ) );
+		}
+
+		return $data;
 	}
 }

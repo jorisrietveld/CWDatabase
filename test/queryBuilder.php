@@ -13,18 +13,30 @@ $config = $connections[ "mysqlConnection" ];
 
 $database = new \CWDatabase\DatabaseConnection( $config );
 
-$sql = "SELECT * FROM CampuswerkSite.news WHERE id = :id ";
+/*$sql = "SELECT * FROM CampuswerkSite.news WHERE id = :id ";
 
 $values = [ ":id" => 1 ];
 
 $database->query( $sql, $values );
 
 var_dump( $database->getAllQuerys() );
-var_dump( $database->getLastQuery() );
+var_dump( $database->getLastQuery() );*/
 
 try
 {
-	$database->select( [ "id", "title" ], "CampuswerkSite.news", [ "id = :id", [ 1 ] ] );
+	$table         = "CampuswerkSite.news";
+	$selectColumns = [ "id", "title" ];
+	$whereClause   = [ "id = :id", [ ":id" => 1 ] ];
+	$orderBy       = "id DESC";
+
+	echo "<h1>SELECT QUERY</h1>";
+
+	$selectDataSet = $database->select( $table, $selectColumns, $whereClause, $orderBy );
+	var_dump( $selectDataSet->fetchAll() );
+
+	echo "<h1>SELECT SERVER DATA</h1>";
+
+	var_dump( $database->getDatabaseInfo() );
 }
 catch( PDOException $e )
 {
@@ -32,6 +44,32 @@ catch( PDOException $e )
 }
 finally
 {
+	echo "<h1>finnaly</h1>";
+	var_dump( $database->getAllQuerys() );
+	var_dump( $database->getLastQuery() );
+}
+echo "<hr>";
+try
+{
+	$table         = "CampuswerkSite.news";
+	$insertValues  = [
+		"title" => "newArticle",
+	    "article" => "article",
+	    "image" => "image",
+	    "order" => 1,
+	    "active" => 1,
+	    "date" => "NOW()"
+	];
+	$database->insert( $table, $insertValues );
+
+}
+catch( PDOException $e )
+{
+	var_dump( $e );
+}
+finally
+{
+	echo "<h1>finnaly</h1>";
 	var_dump( $database->getAllQuerys() );
 	var_dump( $database->getLastQuery() );
 }
