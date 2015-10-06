@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<databaseConnections>
+
+    <CampuswerkSite>
+        <name>CampuswerkSite</name>
+        <driver>mysql</driver>
+        <host>127.0.0.1
+        </host>
+        <username>root</username>
+        <password>toor</password>
+        <database>CampuswerkSite</database>
+        <port>3306</port>
+        <charset>utf8</charset>
+        <collation>utf8_general_ci</collation>
+    </CampuswerkSite>
+
+    <AuthenticationConnection>
+        <name>AuthenticationConnection</name>
+        <driver>mysql</driver>
+        <host>127.0.0.1</host>
+        <username>root</username>
+        <password>toor</password>
+        <database>test</database>
+        <port>3306</port>
+        <charset>utf8</charset>
+        <collation>utf8_general_ci</collation>
+    </AuthenticationConnection>
+
+</databaseConnections>

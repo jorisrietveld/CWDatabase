@@ -8,18 +8,26 @@
 namespace CWDatabase;
 
 use CWDatabase\Drivers\DriverFactory;
-
+use CWDatabase\Helper\QueryLogger;
+use CWDatabase\Helper\Arr;
 
 class DatabaseConnection
 {
-	protected $config =[];
-	protected $driver = null;
-	protected $connection = null;
-	protected $queryLogger = [];
+	protected $config      = [ ];
+	protected $driver      = null;
+	protected $connection  = null;
+	protected $queryLogger = null;
+
+	public $logQuerys = true;
 
 	public function __construct( Array $config = [ ] )
 	{
 		$this->config = $config;
+
+		if( $this->logQuerys )
+		{
+			$this->queryLogger = new QueryLogger();
+		}
 	}
 
 	/**
@@ -29,9 +37,7 @@ class DatabaseConnection
 	 */
 	public function getConnection( Array $config = [ ] )
 	{
-		$this->checkIfConfigIsSet( $config );
-		$this->getDriver();
-		$this->openConnection();
+		$this->openConnection( $config );
 
 		return $this->connection;
 	}
@@ -39,8 +45,11 @@ class DatabaseConnection
 	/**
 	 * Open an database connection based on the config[] property
 	 */
-	protected function openConnection()
+	protected function openConnection( Array $config = [ ] )
 	{
+		$this->checkIfConfigIsSet( $config );
+		$this->getDriver();
+
 		if( $this->connection == null )
 		{
 			$this->connection = $this->driver->connect( $this->config );
@@ -82,9 +91,14 @@ class DatabaseConnection
 	 */
 	public function rawSqlStatement( $sql )
 	{
-		$connection = $this->getDatabaseConnection();
+		$this->openConnection();
 
-		return $connection->exec( $sql );
+		if( $this->logQuerys )
+		{
+			$this->queryLogger->log( __METHOD__, $sql );
+		}
+
+		return $this->connection->exec( $sql );
 	}
 
 	/**
@@ -97,9 +111,14 @@ class DatabaseConnection
 	 */
 	public function rawQuery( $sql )
 	{
-		$connection = $this->getDatabaseConnection();
+		$this->openConnection();
 
-		return $connection->query( $sql );
+		if( $this->logQuerys )
+		{
+			$this->queryLogger->log( __METHOD__, $sql );
+		}
+
+		return $this->connection->query( $sql );
 	}
 
 	/**
@@ -109,12 +128,21 @@ class DatabaseConnection
 	 *
 	 * @param $sql
 	 * @param $parameters
+	 *
+	 * @return bool|mixed
 	 */
 	public function query( $sql, $parameters = [ ] )
 	{
-		$pdoStatement = $this->databaseConnection->prepare( $sql );
+		$this->openConnection();
 
-		if( count( $parameters ) )
+		if( $this->logQuerys )
+		{
+			$this->queryLogger->log( __METHOD__, $sql );
+		}
+
+		$pdoStatement = $this->connection->prepare( $sql );
+
+		if( count( $parameters ) && $parameters !== false )
 		{
 			$pdoStatement = $this->bindValues( $pdoStatement, $parameters );
 
@@ -165,21 +193,18 @@ class DatabaseConnection
 	 * @param array  $where
 	 * @param string $order
 	 *
-	 * @return object
+	 * @return bool|mixed
 	 */
 	public function select( Array $columns, $table, Array $where = [ ], $order = "" )
 	{
-		// TODO: remove example.
-		$whereClauseData = [ "id = :id AND name = :name", [ "id" => 1, "name" => "joris" ] ];
-
-		$sqlColonsString = "`" . rtrim( join( "`,", $columns ), "," );
+		$sqlColonsString = "`" . join( "`,`", $columns ) . "`";
 
 		$sql = "SELECT {$sqlColonsString} FROM {$table} ";
 
 		// If there there is an where clause.
 		if( count( $where ) )
 		{
-			$sql .= $where[ 0 ];
+			$sql .= " WHERE " . $where[ 0 ];
 			$valuesWhereClause = $where[ 1 ];
 		}
 
@@ -187,5 +212,29 @@ class DatabaseConnection
 		$sql .= $order;
 
 		return $this->query( $sql, isset( $valuesWhereClause ) );
+	}
+
+	public function getLastQuery()
+	{
+		if( $this->logQuerys )
+		{
+			return $this->queryLogger->getLast();
+		}
+		else
+		{
+			throw new \LogicException(  );
+		}
+	}
+
+	public function getAllQuerys(  )
+	{
+		if( $this->logQuerys )
+		{
+			return $this->queryLogger->getAll();
+		}
+		else
+		{
+			throw new \LogicException();
+		}
 	}
 }

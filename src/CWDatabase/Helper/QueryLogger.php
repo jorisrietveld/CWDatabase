@@ -8,10 +8,21 @@ namespace CWDatabase\Helper;
 
 class QueryLogger
 {
-	public $querrys = [ ];
+	private $querrys = [ ];
 
-	public function __callStatic()
+	public function log( $method, $sql )
 	{
+		$this->querrys[] = [ $method, $sql ];
+	}
+
+	public function getLast()
+	{
+		return end( $this->querrys );
+	}
+
+	public function getAll()
+	{
+		return $this->querrys;
 	}
 
 }
