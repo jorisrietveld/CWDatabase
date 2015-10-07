@@ -9,10 +9,9 @@
 require( "header.php" );
 
 // Set an handler for un caught exceptions
-set_exception_handler( function ( $exception )
+set_exception_handler( function ( $exception ) use ( &$debugbar )
 {
-	echo "<h3>Uncaught exception!</h3>";
-	var_dump( $exception );
+	$debugbar[ 'exceptions' ]->addException( $exception );
 } );
 
 /**
@@ -44,7 +43,7 @@ if( true )
 	 */
 	$databaseConnection = new \CWDatabase\DatabaseConnection( $config );
 
-	var_dump( $databaseConnection );
+	//var_dump( $databaseConnection );
 }
 
 if( false )
@@ -106,8 +105,11 @@ if( false )
 	}
 	catch( PDOException $pdoException )
 	{
+		$debugbar[ 'exceptions' ]->addException( $pdoException );
+
 		echo "<h3>An pdo exception was thrown</h3>";
 		var_dump( $pdoException );
+
 		echo "<h3>database connection</h3>";
 		var_dump( $databaseConnection );
 	}
@@ -129,13 +131,16 @@ if( false )
 	}
 	catch( PDOException $pdoException )
 	{
+		$debugbar[ 'exceptions' ]->addException( $pdoException );
 		echo "<h3>An pdo exception was thrown</h3>";
 		var_dump( $pdoException );
+
 		echo "<h3>database connection</h3>";
 		var_dump( $databaseConnection );
 	}
 	catch( Exception $e )
 	{
+		$debugbar[ 'exceptions' ]->addException( $e );
 		echo "<h3>An exception was thrown</h3>";
 		var_dump( $e );
 	}
@@ -171,6 +176,7 @@ if( false )
 	}
 	catch( Exception $e )
 	{
+		$debugbar[ 'exceptions' ]->addException( $e );
 		echo "<h3>An exception was thrown</h3>";
 		var_dump( $e );
 		echo "<h3>database connection</h3>";
@@ -191,6 +197,7 @@ if( true )
 			"password" => "abc123"
 		];
 
+		echo "<h3>insert shortcut</h3>";
 		var_dump( $databaseConnection->insert( $table, $insertShortcut ) );
 
 		/**
@@ -218,6 +225,8 @@ if( true )
 	}
 	catch( PDOException $pdoException )
 	{
+		$debugbar[ 'exceptions' ]->addException( $pdoException );
+
 		echo "<h3>An pdo exception was thrown</h3>";
 		var_dump( $pdoException );
 		echo "<h3>database connection</h3>";
@@ -225,6 +234,7 @@ if( true )
 	}
 	catch( Exception $e )
 	{
+		$debugbar[ 'exceptions' ]->addException( $e );
 		echo "<h3>An exception was thrown</h3>";
 		var_dump( $e );
 	}
@@ -237,13 +247,17 @@ if( false )
 	}
 	catch( PDOException $pdoException )
 	{
+		$debugbar[ 'exceptions' ]->addException( $pdoException );
+
 		echo "<h3>An pdo exception was thrown</h3>";
 		var_dump( $e );
+
 		echo "<h3>database connection</h3>";
 		var_dump( $databaseConnection );
 	}
 	catch( Exception $e )
 	{
+		$debugbar[ 'exceptions' ]->addException( $e );
 		echo "<h3>An exception was thrown</h3>";
 		var_dump( $e );
 	}
@@ -265,5 +279,4 @@ if( false )
 
 }
 
-
-
+\CWDatabase\Helper\DebugBar::render( $debugbar );

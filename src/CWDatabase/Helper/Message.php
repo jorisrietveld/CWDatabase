@@ -2,7 +2,6 @@
 /**
  * Author: Joris Rietveld <jorisrietveld@protonmail.com>
  * Date: 25-9-15 - 13:42
- * Licence: GPLv3
  */
 
 namespace CWDatabase\Helper;

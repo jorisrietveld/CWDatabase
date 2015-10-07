@@ -7,4 +7,5 @@ $baseDir = dirname($vendorDir);
 
 return array(
     'DebugBar' => array( $vendorDir . '/maximebf/debugbar/src' ),
+    'Assetic'  => array( $vendorDir . '/kriswallsmith/assetic/src' ),
 );

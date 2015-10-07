@@ -2,7 +2,6 @@
 /**
  * Author: Joris Rietveld <jorisrietveld@protonmail.com>
  * Date: 21-9-15 - 8:49
- * Licence: GPLv3
  */
 
 namespace CWDatabase;
@@ -145,7 +144,7 @@ class DatabaseConnection
 			$this->queryLogger->log( __METHOD__, $sql );
 		}
 
-		// TODO: complete code.
+		/*// TODO: complete code.
 		if( $literals = $this->checkLiterals( $parameters ) )
 		{
 			foreach( $literals as $literal )
@@ -165,7 +164,7 @@ class DatabaseConnection
 				}
 			}
 
-		}
+		}*/
 
 		$pdoStatement = $this->connection->prepare( $sql );
 
@@ -277,7 +276,7 @@ class DatabaseConnection
 	 * the columns like [ "columnOne", "columnTwo" ] and pass the values in values with either question mark or named
 	 * placeholders.
 	 *
-*@param $table
+	 * @param $table
 	 * @param $values
 	 */
 	public function insert( $table, array $fields, array $values = [ ] )
@@ -300,7 +299,7 @@ class DatabaseConnection
 			}
 
 			// Add the fields to the sql.
-			$sql .= "`" . join( "`,`", $fields ) . "`) VALUES ( ";
+			$sql .= "`" . join( "`,`", $fields ) . "`) VALUES (";
 
 			$sql         = $this->buildInsertString( $sql, $values );
 			$boundValues = $values;
@@ -331,10 +330,10 @@ class DatabaseConnection
 		{
 			$columns[]     = $columnName;
 			$boundValues[] = $value;
-			$valuesString .= "?,";
+			$valuesString .= "?, ";
 		}
 
-		$baseSql .= "`" . join( "`,`", $columns ) . "`) VALUES ( " . rtrim( $valuesString, "," ) . ");";
+		$baseSql .= "`" . join( "`,`", $columns ) . "`) VALUES ( " . rtrim( $valuesString, ", " ) . ")";
 
 		return [ $baseSql, $boundValues ];
 	}
@@ -353,8 +352,9 @@ class DatabaseConnection
 		{
 			foreach( $values as $placeholder => $value )
 			{
-				$baseSql .= $placeholder . " ";
+				$baseSql .= $placeholder . ", ";
 			}
+			$baseSql = rtrim( $baseSql, ", " );
 			$baseSql .= ");";
 		}
 		else
@@ -363,7 +363,7 @@ class DatabaseConnection
 			{
 				$baseSql .= "?, ";
 			}
-			$baseSql = rtrim( $baseSql, "," ) . ");";
+			$baseSql = rtrim( $baseSql, ", " ) . ")";
 		}
 
 		return $baseSql;

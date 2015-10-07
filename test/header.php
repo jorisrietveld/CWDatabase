@@ -7,19 +7,24 @@
 
 define( "PROJECT_NAME", "CWDatabase" );
 define( "PROJECT_ROOT", str_replace( "test", "", __DIR__ ) );
+
 define( "PROJECT_SRC", PROJECT_ROOT . "src" . DIRECTORY_SEPARATOR );
 define( "PROJECT_FILE_EXT", ".php" );
 
-/**
- * Debug levels are
- */
-define( "PROJECT_DEBUG_LEVEL", 1 );
+// Register the composer autoloader
+require( "../vendor/autoload.php" );
 
+// Register the project autoloader.
 spl_autoload_register( function ( $class )
 {
 	// Resolve the path to the class with actual system paths.
 	$classLocation = PROJECT_SRC . str_replace( "\\", DIRECTORY_SEPARATOR, $class ) . PROJECT_FILE_EXT;
-	include $classLocation;
+
+	if( file_exists( $classLocation ) )
+	{
+		include $classLocation;
+	}
+
 } );
 
 function dump( $item, $showVarTypes = false )
@@ -56,10 +61,7 @@ HTML;
 	echo "<button class='illuminatiIsEveryWhere' onclick='historyMinusOne()'><- Go back</button>";
 }
 
-/*set_error_handler(function( $errorCode, $errorMessage ){
-	echo "<table style='margin-bottom: 20px;' border='1px solid black'><thead style='background-color: coral'><th>Code:</th><th>Message:</th></thead><tbody><tr><td>{$errorCode}</td><td>{$errorMessage}</td></tr></tbody></table>";
-});
+use \DebugBar\StandardDebugBar;
 
-set_exception_handler(function( $exception ){
-	echo "<table border='1px solid black'><thead style='background-color: coral'><th>Uncaught exception!</th></thead><tbody><tr><td>{$exception}</td></tr></tbody></table>";
-});*/
+
+$debugbar = new StandardDebugBar();

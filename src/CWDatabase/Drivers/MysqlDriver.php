@@ -2,7 +2,6 @@
 /**
  * Author: Joris Rietveld <jorisrietveld@protonmail.com>
  * Date: 2-9-15 - 19:06
- * Licence: GPLv3
  */
 
 namespace CWDatabase\Drivers;

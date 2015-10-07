@@ -10,6 +10,7 @@
     }
   ],
   "require": {
-    "maximebf/debugbar": "^1.10@dev"
+    "maximebf/debugbar": "^1.10@dev",
+    "kriswallsmith/assetic": "^1.4@dev"
   }
 }
