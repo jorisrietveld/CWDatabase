@@ -6,4 +6,6 @@ $vendorDir = dirname(dirname(__FILE__));
 $baseDir = dirname($vendorDir);
 
 return array(
+    'Symfony\\Component\\VarDumper\\' => array( $vendorDir . '/symfony/var-dumper' ),
+    'Psr\\Log\\'                      => array( $vendorDir . '/psr/log/Psr/Log' ),
 );

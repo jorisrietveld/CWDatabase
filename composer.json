@@ -8,5 +8,8 @@
       "name": "Joris Rietveld",
       "email": "jorisrietveld@gmail.com"
     }
-  ]
+  ],
+  "require": {
+    "maximebf/debugbar": "^1.10@dev"
+  }
 }

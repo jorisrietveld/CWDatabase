@@ -50,7 +50,7 @@ class DatabaseConnection
 	protected function openConnection( Array $config = [ ] )
 	{
 		$this->checkIfConfigIsSet( $config );
-		$this->getDriver();
+		$this->driver = $this->getDriver();
 
 		if( $this->connection == null )
 		{
@@ -76,11 +76,14 @@ class DatabaseConnection
 	/**
 	 * Get an database driver.
 	 */
-	public function getDriver()
+
+	public function getDriver( Array $config = [ ] )
 	{
+		$this->checkIfConfigIsSet( $config );
+
 		$driverFactory = new DriverFactory();
 
-		$this->driver = $driverFactory->createDriver( $this->config );
+		return $driverFactory->createDriver( $this->config );
 	}
 
 	/**
@@ -142,6 +145,28 @@ class DatabaseConnection
 			$this->queryLogger->log( __METHOD__, $sql );
 		}
 
+		// TODO: complete code.
+		if( $literals = $this->checkLiterals( $parameters ) )
+		{
+			foreach( $literals as $literal )
+			{
+				$literalAt    = $literal[ 0 ];
+				$literalValue = $literal[ 1 ];
+
+				if( is_numeric( $literalAt ) )
+				{
+					echo "<h1>Is numeric literal</h1>";
+					var_dump( $literals );
+				}
+				else
+				{
+					echo "<h1>Is named placeholder</h1>";
+					var_dump( $literals );
+				}
+			}
+
+		}
+
 		$pdoStatement = $this->connection->prepare( $sql );
 
 		if( count( $parameters ) )
@@ -152,6 +177,32 @@ class DatabaseConnection
 		if( $pdoStatement->execute() )
 		{
 			return $pdoStatement;
+		}
+
+		return false;
+	}
+
+	public function checkLiterals( Array $parameters )
+	{
+		echo "<h3>" . __METHOD__ . "</h3>";
+		var_dump( $parameters );
+		$counter  = 0;
+		$literals = [ ];
+
+		foreach( $parameters as $placeholder => $value )
+		{
+			if( is_object( $value ) )
+			{
+				$literals[] = [ $placeholder, $value->getLiteral() ];
+				var_dump( $literals );
+			}
+
+			$counter++;
+		}
+
+		if( count( $literals ) )
+		{
+			return $literals;
 		}
 
 		return false;
@@ -221,15 +272,57 @@ class DatabaseConnection
 	}
 
 	/**
-	 * Insert an data record into the connected database.
+	 * Insert a data record into the connected database. You can either pass the values like ["columnName" =>
+	 * "columnValue"] if you do so it will use a prepared statment with question mark placeholders. You can also pass
+	 * the columns like [ "columnOne", "columnTwo" ] and pass the values in values with either question mark or named
+	 * placeholders.
 	 *
-	 * @param $table
+*@param $table
 	 * @param $values
 	 */
-	public function insert( $table, $values )
+	public function insert( $table, array $fields, array $values = [ ] )
 	{
 		$sql = "INSERT INTO {$table} (";
 
+		// If the values are passed by the $columns argument.
+		if( Arr::isAssoc( $fields ) )
+		{
+			$result      = $this->buildInsertStringQuestionMarks( $sql, $fields );
+			$sql         = $result[ 0 ];
+			$boundValues = $result[ 1 ];
+		}
+		else
+		{
+			// If there are no values passed.
+			if( count( $values ) < 1 )
+			{
+				throw new \LogicException( Message::getMessage( "databaseConnection.exceptions.noInsertValuesPassed" ) );
+			}
+
+			// Add the fields to the sql.
+			$sql .= "`" . join( "`,`", $fields ) . "`) VALUES ( ";
+
+			$sql         = $this->buildInsertString( $sql, $values );
+			$boundValues = $values;
+		}
+
+		$pdoStatement = $this->query( $sql, $boundValues );
+
+		return $pdoStatement->rowCount();
+	}
+
+	/**
+	 * This method takes the baseSql string and adds the fields and question marks to it. It also gets
+	 * the values that will be bound to the question mark placeholders. it returns an array with two elements
+	 * the first one the sql and the second one the values.
+	 *
+	 * @param $baseSql
+	 * @param $values
+	 *
+	 * @return array
+	 */
+	private function buildInsertStringQuestionMarks( $baseSql, $values )
+	{
 		$columns      = [ ];
 		$boundValues  = [ ];
 		$valuesString = "";
@@ -241,10 +334,87 @@ class DatabaseConnection
 			$valuesString .= "?,";
 		}
 
-		$sql .= "`" . join( "`,`", $columns ) . "`) VALUES ( " . rtrim( $valuesString, "," ) . ");";
+		$baseSql .= "`" . join( "`,`", $columns ) . "`) VALUES ( " . rtrim( $valuesString, "," ) . ");";
 
-		$this->query( $sql, $boundValues );
+		return [ $baseSql, $boundValues ];
 	}
+
+	/**
+	 * This method will build the sql insert string with either question mark or named placeholders.@
+	 *
+	 * @param $baseSql
+	 * @param $values
+	 *
+	 * @return string
+	 */
+	private function buildInsertString( $baseSql, $values )
+	{
+		if( Arr::isAssoc( $values ) )
+		{
+			foreach( $values as $placeholder => $value )
+			{
+				$baseSql .= $placeholder . " ";
+			}
+			$baseSql .= ");";
+		}
+		else
+		{
+			foreach( $values as $value )
+			{
+				$baseSql .= "?, ";
+			}
+			$baseSql = rtrim( $baseSql, "," ) . ");";
+		}
+
+		return $baseSql;
+	}
+
+	/**
+	 * Delete an record from the connected database by record id.
+	 *
+	 * @param $table
+	 * @param $id
+	 *
+	 * @return mixed
+	 */
+	public function delete( $table, $id )
+	{
+		$sql          = "DELETE FROM {$table} WHERE id = :id ";
+		$boundValue   = [ ":id" => $id ];
+		$pdoStatement = $this->query( $sql, $boundValue );
+
+		return $pdoStatement->rowCount();
+	}
+
+	/**
+	 * Delete a record from the connected database with an where clause.
+	 *
+	 * @param       $table
+	 * @param array $where
+	 *
+	 * @return mixed
+	 */
+	public function deleteWhere( $table, Array $where = [ ] )
+	{
+		$sql    = "DELETE FROM {$table} WHERE ";
+		$values = [ ];
+
+		if( count( $where ) )
+		{
+			$sql .= $where[ 0 ];
+			$values[] = $where[ 1 ];
+		}
+
+		$pdoStatement = $this->query( $sql, $values );
+
+		return $pdoStatement->rowCount();
+	}
+
+	public function update( $table, $set, array $where = [ ] )
+	{
+		$sql = "UPDATE {$table} SET ";
+	}
+
 
 	/**
 	 * If the logQuerys property is set to true it will return last query that was send to the database.
@@ -286,6 +456,11 @@ class DatabaseConnection
 	 */
 	public function getDatabaseInfo()
 	{
+		if( $this->connection == null )
+		{
+			return [ "info" => "Not connected to an database!" ];
+		}
+
 		$attributes = [
 			"CLIENT_VERSION",
 			"CONNECTION_STATUS",

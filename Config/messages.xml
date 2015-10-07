@@ -6,6 +6,9 @@
                 Your trying to get query's but the query logger is turned off. To log query's set the logQuerys property
                 to true.
             </queryNotLogged>
+            <noInsertValuesPassed>
+
+            </noInsertValuesPassed>
         </exceptions>
     </databaseConnection>
 </messages>

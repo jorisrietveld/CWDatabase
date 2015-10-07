@@ -51,16 +51,23 @@ finally
 echo "<hr>";
 try
 {
-	$table         = "CampuswerkSite.news";
-	$insertValues  = [
-		"title" => "newArticle",
-	    "article" => "article",
-	    "image" => "image",
-	    "order" => 1,
-	    "active" => 1,
-	    "date" => "NOW()"
+	$table = "CampuswerkSite.news";
+
+	$insertColumns = [ "title", "article", "image", "order", "active", "date" ];
+
+	$insertValues = [
+		":title"   => "newArticle",
+		":article" => "article",
+		":image"   => "image",
+		":order"   => 1,
+		":active"  => 1,
+		":date"    => ( new \CWDatabase\Helper\DatabaseLiteral( "NOW()" ) )
 	];
-	$database->insert( $table, $insertValues );
+
+	echo "<h1>insert data</h1>";
+	var_dump( $database->insert( $table, $insertColumns, $insertValues ) );
+
+
 
 }
 catch( PDOException $e )
@@ -73,3 +80,5 @@ finally
 	var_dump( $database->getAllQuerys() );
 	var_dump( $database->getLastQuery() );
 }
+
+echo "<hr>";
