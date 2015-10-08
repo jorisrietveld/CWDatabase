@@ -425,6 +425,25 @@ if( false || MASTER_SWITCH )
 {
 	try
 	{
+		$table  = "test.users";
+		$fields = [ "name", "password" ];
+
+		$whereClauseNamedPlaceholders        = [ "id = :id ", [ 1 ] ];
+		$whereClauseQuestionMarkPlaceholders = [ "id = ? ", [ 1 ] ];
+
+		echo "<h3>Select data with where clause with named placeholders</h3>";
+		$pdoStatement = $databaseConnection->select( $table, $fields, $whereClauseNamedPlaceholders );
+
+		var_dump( $pdoStatement );
+		echo "<h4>result</h4>";
+		var_dump( $pdoStatement->fetchAll() );
+
+		echo "<h3>Select data with where clause with question mark placeholders</h3>";
+		$pdoStatement = $databaseConnection->select( $table, $fields, $whereClauseQuestionMarkPlaceholders );
+		var_dump( $pdoStatement );
+
+		echo "<h4>result</h4>";
+		var_dump( $pdoStatement->fetchAll() );
 
 	}
 	catch( PDOException $pdoException )
@@ -432,7 +451,7 @@ if( false || MASTER_SWITCH )
 		$debugbar[ 'exceptions' ]->addException( $pdoException );
 
 		echo "<h3>An pdo exception was thrown</h3>";
-		var_dump( $e );
+		var_dump( $pdoException );
 
 		echo "<h3>database connection</h3>";
 		var_dump( $databaseConnection );

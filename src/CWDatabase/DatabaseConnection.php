@@ -11,6 +11,7 @@ use CWDatabase\Helper\Logger;
 use CWDatabase\Helper\Message;
 use CWDatabase\Helper\QueryLogger;
 use CWDatabase\Helper\Arr;
+use CWDatabase\Helper\Str;
 use DebugBar\StandardDebugBar;
 use Psr\Log\LogLevel;
 
@@ -157,54 +158,29 @@ class DatabaseConnection
 	 */
 	public function query( $sql, $parameters = [ ] )
 	{
-		try
+		$this->openConnection();
+
+		if( $this->logQuerys )
 		{
-			$this->openConnection();
-
-			if( $this->logQuerys )
-			{
-				$this->queryLogger->log( __METHOD__, $sql, $parameters );
-			}
-
-			/*// TODO: complete code.
-			if( $literals = $this->checkLiterals( $parameters ) )
-			{
-				foreach( $literals as $literal )
-				{
-					$literalAt    = $literal[ 0 ];
-					$literalValue = $literal[ 1 ];
-
-					if( is_numeric( $literalAt ) )
-					{
-						echo "<h1>Is numeric literal</h1>";
-						var_dump( $literals );
-					}
-					else
-					{
-						echo "<h1>Is named placeholder</h1>";
-						var_dump( $literals );
-					}
-				}
-
-			}*/
-
-			$pdoStatement = $this->connection->prepare( $sql );
-
-			if( count( $parameters ) )
-			{
-				$pdoStatement = $this->bindValues( $pdoStatement, $parameters );
-			}
-
-			if( $pdoStatement->execute() )
-			{
-				//todo add message query success
-				return $pdoStatement;
-			}
-
+			$this->queryLogger->log( __METHOD__, $sql, $parameters );
 		}
-		catch( \PDOException $exception )
+
+		// TODO: complete code to insert literals
+
+		$pdoStatement = $this->connection->prepare( $sql );
+
+		if( count( $parameters ) )
 		{
-			$this->addException( $exception );
+			$pdoStatement = $this->bindValues( $pdoStatement, $parameters );
+		}
+
+		if( $pdoStatement->execute() )
+		{
+			$debugMessagePlaceholders = [ "method" => __METHOD__, "sql" => $sql, "values" => join( ", ", $parameters ) ];
+			$debugMessage             = Message::getMessage( "databaseConnection.debug.query", $debugMessagePlaceholders );
+			$this->logMessage( $debugMessage, LogLevel::DEBUG );
+
+			return $pdoStatement;
 		}
 
 		return false;
@@ -214,6 +190,7 @@ class DatabaseConnection
 	{
 		echo "<h3>" . __METHOD__ . "</h3>";
 		var_dump( $parameters );
+
 		$counter  = 0;
 		$literals = [ ];
 
@@ -269,16 +246,17 @@ class DatabaseConnection
 	/**
 	 * Select a data set from the connected database.
 	 *
-	 * @param array  $columns
+	 * @param array $fields
 	 * @param        $table
 	 * @param array  $where
 	 * @param string $order
+
 	 *
-	 * @return bool|mixed
+*@return bool|mixed
 	 */
-	public function select( $table, Array $columns, Array $where = [ ], $order = "" )
+	public function select( $table, Array $fields, Array $where = [ ], $order = "" )
 	{
-		$sqlColonsString = "`" . join( "`,`", $columns ) . "`";
+		$sqlColonsString = "`" . join( "`,`", $fields ) . "`";
 
 		$sql = "SELECT {$sqlColonsString} FROM {$table} ";
 
@@ -290,7 +268,7 @@ class DatabaseConnection
 		}
 
 		// Add the order.
-		$sql .= " ORDER BY " . $order;
+		$sql .= ( strlen( $order < 1 ) ) ? "" : " ORDER BY " . $order;
 
 		if( isset( $valuesWhereClause ) )
 		{
@@ -301,17 +279,14 @@ class DatabaseConnection
 
 		if( $pdoStatement )
 		{
-			$pdoStatement->rowCount();
+			$rowCount = $pdoStatement->rowCount();
 
-			$infoMessagePlaceholders = [ "method" => __METHOD__, "selectedRows" => "", "table" => $table ];
-			$infoMessage             = Message::getMessage( "databaseConnection.debug.selectQuery" );
+			$infoMessagePlaceholders = [ "method" => __METHOD__, "selectedRows" => $rowCount, "table" => $table ];
+			$infoMessage             = Message::getMessage( "databaseConnection.debug.selectQuery", $infoMessagePlaceholders );
 			$this->logMessage( $infoMessage, LogLevel::INFO );
 		}
-		else
-		{
-			$infoMessagePlaceholders = [ ];
 
-		}
+		return $pdoStatement;
 	}
 
 	/**
@@ -354,7 +329,7 @@ class DatabaseConnection
 		}
 
 		$pdoStatement = $this->query( $sql, $boundValues );
-		$rowCount = $pdoStatement->rowCount();
+		$rowCount     = $pdoStatement->rowCount();
 
 		$infoMessagePlaceholders = [ "method" => __METHOD__, "table" => $table, "insertedRows" => $rowCount ];
 		$infoMessage             = Message::getMessage( "databaseConnection.debug.insertQuery", $infoMessagePlaceholders );
@@ -466,7 +441,7 @@ class DatabaseConnection
 		}
 
 		$pdoStatement = $this->query( $sql, $values );
-		$deletedRows = $pdoStatement->rowCount();
+		$deletedRows  = $pdoStatement->rowCount();
 
 		$infoMessagePlaceholders = [ "method" => __METHOD__, "deletedRows" => $deletedRows, "table" => $table ];
 		$infoMessage             = Message::getMessage( "databaseConnection.debug.deleteQuery", $infoMessagePlaceholders );

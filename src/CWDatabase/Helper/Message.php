@@ -67,13 +67,14 @@ class Message
 	private static function insertPlaceholders( $string, $placeholders )
 	{
 		$message = $string;
+
 		if( Arr::isAssoc( $placeholders ) )
 		{
 			foreach( $placeholders as $key => $value )
 			{
 				$key = self::PLACEHOLDER_START . $key . self::PLACEHOLDER_END;
 
-				$message = str_replace( $key, $value, $string );
+				$message = str_replace( $key, $value, $message );
 			}
 		}
 		else

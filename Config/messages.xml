@@ -27,6 +27,9 @@
             <selectQuery>
                 From {{method}}, Selected query successful, selected {{selectedRows}} rows from {{table}}.
             </selectQuery>
+            <query>
+                From {{method}}, Performed an query: {{sql}} Values {{values}}
+            </query>
         </debug>
     </databaseConnection>
 </messages>
