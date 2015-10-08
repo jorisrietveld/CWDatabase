@@ -47,7 +47,7 @@ if( true || MASTER_SWITCH )
 	/**
 	 * Instantiate an new database connection object.
 	 */
-	$databaseConnection = new \CWDatabase\DatabaseConnection( $config );
+	$databaseConnection = new \CWDatabase\DatabaseConnection( $config, $debugbar );
 
 	echo "<h3>Connect to database</h3>";
 	var_dump( $databaseConnection );
@@ -397,10 +397,10 @@ if( false || MASTER_SWITCH )
 			$setWithQuestionMarkValues
 		];
 
-		echo "<h3>Update set with named placeholder values and</h3>";
-		var_dump( $databaseConnection->update( $table, $setWithPlaceholdersValues, 1 ) )
+		/*	echo "<h3>Update set with named placeholder values and</h3>";
+			var_dump( $databaseConnection->update( $table, $setWithPlaceholdersValues, 1 ) );
 
-		echo "<h3>Update wet with question mark placeholders values</h3>";
+			echo "<h3>Update wet with question mark placeholders values</h3>";*/
 
 
 	}
@@ -494,5 +494,6 @@ if( false )
 {
 
 }
+$debugBar = $databaseConnection->getDebugBar();
 
-\CWDatabase\Helper\DebugBar::render( $debugbar );
+\CWDatabase\Helper\DebugBar::render( $debugBar );

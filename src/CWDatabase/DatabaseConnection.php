@@ -7,25 +7,39 @@
 namespace CWDatabase;
 
 use CWDatabase\Drivers\DriverFactory;
+use CWDatabase\Helper\Logger;
 use CWDatabase\Helper\Message;
 use CWDatabase\Helper\QueryLogger;
 use CWDatabase\Helper\Arr;
 use DebugBar\StandardDebugBar;
+use Psr\Log\LogLevel;
+
+use \InvalidArgumentException;
+use \PDO;
 
 
 class DatabaseConnection
 {
-	private $logToDebugBar    = false;
-	private $debugBarInstance = null;
+	/**
+	 * Debug levels:
+	 * 0 = log nothing
+	 * 1 = log emergency, alert, critical .
+	 * 2 = log emergency, alert, critical, error, warning, notice
+	 * 3 = log emergency, alert, critical, error, warning, notice, info
+	 * 4 = log log emergency, alert, critical, error, warning, notice, info, debug
+	 */
+	private $logLevel = 0;
+	private $debugBar;
 
 	protected $config      = [ ];
 	protected $driver      = null;
 	protected $connection  = null;
 	protected $queryLogger = null;
 
-	public $logQuerys = true;
+	public $logQuerys       = true;
+	public $throwExceptions = true;
 
-	public function __construct( Array $config = [ ] )
+	public function __construct( Array $config = [ ], StandardDebugBar $debugBar = null )
 	{
 		$this->config = $config;
 
@@ -33,6 +47,8 @@ class DatabaseConnection
 		{
 			$this->queryLogger = new QueryLogger();
 		}
+
+		$this->debugBar = $debugBar;
 	}
 
 	/**
@@ -141,45 +157,54 @@ class DatabaseConnection
 	 */
 	public function query( $sql, $parameters = [ ] )
 	{
-		$this->openConnection();
-
-		if( $this->logQuerys )
+		try
 		{
-			$this->queryLogger->log( __METHOD__, $sql, $parameters );
-		}
+			$this->openConnection();
 
-		/*// TODO: complete code.
-		if( $literals = $this->checkLiterals( $parameters ) )
-		{
-			foreach( $literals as $literal )
+			if( $this->logQuerys )
 			{
-				$literalAt    = $literal[ 0 ];
-				$literalValue = $literal[ 1 ];
-
-				if( is_numeric( $literalAt ) )
-				{
-					echo "<h1>Is numeric literal</h1>";
-					var_dump( $literals );
-				}
-				else
-				{
-					echo "<h1>Is named placeholder</h1>";
-					var_dump( $literals );
-				}
+				$this->queryLogger->log( __METHOD__, $sql, $parameters );
 			}
 
-		}*/
+			/*// TODO: complete code.
+			if( $literals = $this->checkLiterals( $parameters ) )
+			{
+				foreach( $literals as $literal )
+				{
+					$literalAt    = $literal[ 0 ];
+					$literalValue = $literal[ 1 ];
 
-		$pdoStatement = $this->connection->prepare( $sql );
+					if( is_numeric( $literalAt ) )
+					{
+						echo "<h1>Is numeric literal</h1>";
+						var_dump( $literals );
+					}
+					else
+					{
+						echo "<h1>Is named placeholder</h1>";
+						var_dump( $literals );
+					}
+				}
 
-		if( count( $parameters ) )
-		{
-			$pdoStatement = $this->bindValues( $pdoStatement, $parameters );
+			}*/
+
+			$pdoStatement = $this->connection->prepare( $sql );
+
+			if( count( $parameters ) )
+			{
+				$pdoStatement = $this->bindValues( $pdoStatement, $parameters );
+			}
+
+			if( $pdoStatement->execute() )
+			{
+				//todo add message query success
+				return $pdoStatement;
+			}
+
 		}
-
-		if( $pdoStatement->execute() )
+		catch( \PDOException $exception )
 		{
-			return $pdoStatement;
+			$this->addException( $exception );
 		}
 
 		return false;
@@ -269,10 +294,24 @@ class DatabaseConnection
 
 		if( isset( $valuesWhereClause ) )
 		{
-			return $this->query( $sql, $valuesWhereClause );
+			$pdoStatement = $this->query( $sql, $valuesWhereClause );
 		}
 
-		return $this->query( $sql, [ ] );
+		$pdoStatement = $this->query( $sql, [ ] );
+
+		if( $pdoStatement )
+		{
+			$pdoStatement->rowCount();
+
+			$infoMessagePlaceholders = [ "method" => __METHOD__, "selectedRows" => "", "table" => $table ];
+			$infoMessage             = Message::getMessage( "databaseConnection.debug.selectQuery" );
+			$this->logMessage( $infoMessage, LogLevel::INFO );
+		}
+		else
+		{
+			$infoMessagePlaceholders = [ ];
+
+		}
 	}
 
 	/**
@@ -300,7 +339,11 @@ class DatabaseConnection
 			// If there are no values passed.
 			if( count( $values ) < 1 )
 			{
-				throw new \LogicException( Message::getMessage( "databaseConnection.exceptions.noInsertValuesPassed" ) );
+				$messagePlaceholders = [ "table" => $table, "fields" => join( ", ", $fields ) ];
+				$errorMessage        = Message::getMessage( "databaseConnection.exceptions.noInsertValuesPassed", $messagePlaceholders );
+				$exception           = new InvalidArgumentException( $errorMessage );
+
+				$this->addException( $exception );
 			}
 
 			// Add the fields to the sql.
@@ -311,8 +354,13 @@ class DatabaseConnection
 		}
 
 		$pdoStatement = $this->query( $sql, $boundValues );
+		$rowCount = $pdoStatement->rowCount();
 
-		return $pdoStatement->rowCount();
+		$infoMessagePlaceholders = [ "method" => __METHOD__, "table" => $table, "insertedRows" => $rowCount ];
+		$infoMessage             = Message::getMessage( "databaseConnection.debug.insertQuery", $infoMessagePlaceholders );
+		$this->logMessage( $infoMessage, LogLevel::INFO );
+
+		return $rowCount;
 	}
 
 	/**
@@ -388,7 +436,13 @@ class DatabaseConnection
 		$boundValue   = [ ":id" => $id ];
 		$pdoStatement = $this->query( $sql, $boundValue );
 
-		return $pdoStatement->rowCount();
+		$deletedRows = $pdoStatement->rowCount();
+
+		$infoMessagePlaceholders = [ "method" => __METHOD__, "deletedRows" => $deletedRows, "table" => $table ];
+		$infoMessage             = Message::getMessage( "databaseConnection.debug.deleteQuery", $infoMessagePlaceholders );
+		$this->logMessage( $infoMessage, LogLevel::INFO );
+
+		return $deletedRows;
 	}
 
 	/**
@@ -412,11 +466,17 @@ class DatabaseConnection
 		}
 
 		$pdoStatement = $this->query( $sql, $values );
+		$deletedRows = $pdoStatement->rowCount();
 
-		return $pdoStatement->rowCount();
+		$infoMessagePlaceholders = [ "method" => __METHOD__, "deletedRows" => $deletedRows, "table" => $table ];
+		$infoMessage             = Message::getMessage( "databaseConnection.debug.deleteQuery", $infoMessagePlaceholders );
+		$this->logMessage( $infoMessage, LogLevel::INFO );
+
+		return $deletedRows;
+
 	}
 
-	public function update( $table, $set, $where )
+	public function update( $table, array $set, $where )
 	{
 		$sql = "UPDATE {$table} SET ";
 
@@ -425,7 +485,14 @@ class DatabaseConnection
 
 	private function buildUpdateSet( $set )
 	{
-		// todo write code to check if set is shortcut or if named/questionMark placeholders
+		if( Arr::isAssoc( $set ) )
+		{
+
+		}
+
+		$message   = Message::getMessage( "databaseConnection.exceptions.updateSetValueInvalid" );
+		$exception = new \InvalidArgumentException( $message );
+		$this->addException( $exception );
 	}
 
 	private function buildUpdateWhere( $where )
@@ -459,9 +526,9 @@ class DatabaseConnection
 		else
 		{
 			$message = Message::getMessage( "databaseConnection.exceptions.queryNotLogged" );
-			$this->addDebugMessage( $message, "fatal" );
 
-			throw new \LogicException( $message );
+			$exception = new \LogicException( $message );
+			$this->addException( $exception );
 		}
 	}
 
@@ -479,9 +546,9 @@ class DatabaseConnection
 		else
 		{
 			$message = Message::getMessage( "databaseConnection.exceptions.queryNotLogged" );
-			$this->addDebugMessage( $message, "fatal" );
 
-			throw new \LogicException( $message );
+			$exception = new \LogicException();
+			$this->addException( $exception );
 		}
 	}
 
@@ -514,22 +581,34 @@ class DatabaseConnection
 		return $data;
 	}
 
-	public function enableDebugBar( StandardDebugBar $debugBar )
+	private function logMessage( $message, $type )
 	{
-		$this->debugBarInstance = $debugBar;
-		$this->logToDebugBar    = true;
-	}
-
-	public function disableDebugBar()
-	{
-		$this->logToDebugBar = false;
-	}
-
-	private function addDebugMessage( $message, $type )
-	{
-		if( $this->logToDebugBar )
+		if( Logger::getTypeLevel( $type ) >= $this->logLevel )
 		{
-			$this->debugBarInstance[ "message" ]->{$type}( $message );
+			if( $this->debugBar != null )
+			{
+				$this->debugBar[ "messages" ]->{$type}( $message );
+			}
 		}
 	}
+
+	private function addException( $exception )
+	{
+		if( $this->throwExceptions )
+		{
+			throw $exception;
+		}
+
+		if( $this->debugBar != null )
+		{
+			$this->debugBar[ 'exceptions' ]->addException( $exception );
+		}
+	}
+
+	public function getDebugBar()
+	{
+		return $this->debugBar;
+	}
+
+
 }

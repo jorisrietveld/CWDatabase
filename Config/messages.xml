@@ -7,15 +7,26 @@
                 to true.
             </queryNotLogged>
             <noInsertValuesPassed>
-
+                Your trying to insert data into {{table}} and set this fields {{fields}}, but there are no values passed
+                to bind.
             </noInsertValuesPassed>
+            <updateSetValueInvalid>
+                The $set argument must be an associative array with the field => updateValue.
+            </updateSetValueInvalid>
         </exceptions>
         <debug>
-            <info>
-                <openConnection>
-
-                </openConnection>
-            </info>
+            <openConnection>
+                An connection has been opened to the {{dbname}} database.
+            </openConnection>
+            <deleteQuery>
+                From {{method}}, Delete query successful, rows deleted {{deletedRows}} rows from {{table}}.
+            </deleteQuery>
+            <insertQuery>
+                From {{method}}, Insert query successful, inserted {{insertedRows}} rows in {{table}}
+            </insertQuery>
+            <selectQuery>
+                From {{method}}, Selected query successful, selected {{selectedRows}} rows from {{table}}.
+            </selectQuery>
         </debug>
     </databaseConnection>
 </messages>

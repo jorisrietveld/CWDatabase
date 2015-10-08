@@ -11,6 +11,8 @@ define( "PROJECT_ROOT", str_replace( "test", "", __DIR__ ) );
 define( "PROJECT_SRC", PROJECT_ROOT . "src" . DIRECTORY_SEPARATOR );
 define( "PROJECT_FILE_EXT", ".php" );
 
+define( "WEBSERVER_ROOT_PATH", "/var/www/" );
+
 // Register the composer autoloader
 require( "../vendor/autoload.php" );
 
