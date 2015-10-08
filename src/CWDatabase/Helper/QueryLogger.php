@@ -10,9 +10,9 @@ class QueryLogger
 {
 	private $querrys = [ ];
 
-	public function log( $method, $sql )
+	public function log( $method, $sql, $parameters = [ ] )
 	{
-		$this->querrys[] = [ $method, $sql ];
+		$this->querrys[] = [ $method, $sql, $parameters ];
 	}
 
 	public function getLast()

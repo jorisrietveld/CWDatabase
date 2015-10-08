@@ -10,10 +10,14 @@ use CWDatabase\Drivers\DriverFactory;
 use CWDatabase\Helper\Message;
 use CWDatabase\Helper\QueryLogger;
 use CWDatabase\Helper\Arr;
+use DebugBar\StandardDebugBar;
 
 
 class DatabaseConnection
 {
+	private $logToDebugBar    = false;
+	private $debugBarInstance = null;
+
 	protected $config      = [ ];
 	protected $driver      = null;
 	protected $connection  = null;
@@ -141,7 +145,7 @@ class DatabaseConnection
 
 		if( $this->logQuerys )
 		{
-			$this->queryLogger->log( __METHOD__, $sql );
+			$this->queryLogger->log( __METHOD__, $sql, $parameters );
 		}
 
 		/*// TODO: complete code.
@@ -227,6 +231,7 @@ class DatabaseConnection
 		}
 		else
 		{
+			var_dump( $values );
 			foreach( $values as $key => $parameter )
 			{
 				$pdoStatement->bindValue( ( $key + 1 ), $parameter );
@@ -402,7 +407,8 @@ class DatabaseConnection
 		if( count( $where ) )
 		{
 			$sql .= $where[ 0 ];
-			$values[] = $where[ 1 ];
+			$values = $where[ 1 ];
+			var_dump( $where );
 		}
 
 		$pdoStatement = $this->query( $sql, $values );
@@ -410,9 +416,32 @@ class DatabaseConnection
 		return $pdoStatement->rowCount();
 	}
 
-	public function update( $table, $set, array $where = [ ] )
+	public function update( $table, $set, $where )
 	{
 		$sql = "UPDATE {$table} SET ";
+
+
+	}
+
+	private function buildUpdateSet( $set )
+	{
+		// todo write code to check if set is shortcut or if named/questionMark placeholders
+	}
+
+	private function buildUpdateWhere( $where )
+	{
+		if( is_numeric( $where ) )
+		{
+			//todo write code for where clause with id.
+		}
+		elseif( is_array( $where ) )
+		{
+			//todo write code to check if named or question placeholders
+		}
+		else
+		{
+			// todo throw exception
+		}
 	}
 
 
@@ -429,7 +458,10 @@ class DatabaseConnection
 		}
 		else
 		{
-			throw new \LogicException( Message::getMessage( "databaseConnection.exceptions.queryNotLogged" ) );
+			$message = Message::getMessage( "databaseConnection.exceptions.queryNotLogged" );
+			$this->addDebugMessage( $message, "fatal" );
+
+			throw new \LogicException( $message );
 		}
 	}
 
@@ -446,7 +478,10 @@ class DatabaseConnection
 		}
 		else
 		{
-			throw new \LogicException( Message::getMessage( "databaseConnection.exceptions.queryNotLogged" ) );
+			$message = Message::getMessage( "databaseConnection.exceptions.queryNotLogged" );
+			$this->addDebugMessage( $message, "fatal" );
+
+			throw new \LogicException( $message );
 		}
 	}
 
@@ -477,5 +512,24 @@ class DatabaseConnection
 		}
 
 		return $data;
+	}
+
+	public function enableDebugBar( StandardDebugBar $debugBar )
+	{
+		$this->debugBarInstance = $debugBar;
+		$this->logToDebugBar    = true;
+	}
+
+	public function disableDebugBar()
+	{
+		$this->logToDebugBar = false;
+	}
+
+	private function addDebugMessage( $message, $type )
+	{
+		if( $this->logToDebugBar )
+		{
+			$this->debugBarInstance[ "message" ]->{$type}( $message );
+		}
 	}
 }

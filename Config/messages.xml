@@ -10,5 +10,12 @@
 
             </noInsertValuesPassed>
         </exceptions>
+        <debug>
+            <info>
+                <openConnection>
+
+                </openConnection>
+            </info>
+        </debug>
     </databaseConnection>
 </messages>
