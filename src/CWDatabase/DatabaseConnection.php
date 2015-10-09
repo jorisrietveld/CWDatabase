@@ -29,7 +29,7 @@ class DatabaseConnection
 	 * 3 = log emergency, alert, critical, error, warning, notice, info
 	 * 4 = log log emergency, alert, critical, error, warning, notice, info, debug
 	 */
-	private $logLevel = 0;
+	private $logLevel = 4;
 	private $debugBar;
 
 	protected $config      = [ ];
@@ -245,14 +245,14 @@ class DatabaseConnection
 
 	/**
 	 * Select a data set from the connected database.
-	 *
-	 * @param array $fields
+
+*
+	 * @param array                $fields
 	 * @param        $table
 	 * @param array  $where
 	 * @param string $order
-
 	 *
-*@return bool|mixed
+	 * @return bool|mixed
 	 */
 	public function select( $table, Array $fields, Array $where = [ ], $order = "" )
 	{
@@ -451,18 +451,69 @@ class DatabaseConnection
 
 	}
 
+	/**
+	 * Update a record in the connected database. The set argument must be an array like: [ tableField => updateValueTo
+	 * ]. The where argument can either be an integer to update an row by id or an array with named/quesion mark
+	 * placeholders.
+	 *
+	 * @param       $table
+	 * @param array $set
+	 * @param       $where
+	 *
+	 * @return bool|mixed
+	 */
 	public function update( $table, array $set, $where )
 	{
 		$sql = "UPDATE {$table} SET ";
 
+		$sqlSetSegment   = $this->buildUpdateSet( $set );
+		$sqlWhereSegment = "WHERE ";
 
+		$boundValues = [ ];
+
+		if( is_int( $where ) )
+		{
+			$sqlWhereSegment .= " `id` = ? ";
+			$boundValues[] = $where;
+		}
+		elseif( empty( $where[ 1 ] ) )
+		{
+			$message   = Message::getMessage( "databaseConnection.exceptions.invalidWhereArgument" );
+			$exception = new \InvalidArgumentException( $message );
+			$this->addException( $exception );
+		}
+		else
+		{
+			$sqlWhereSegment .= $where[ 0 ];
+			$boundValues = $where[ 1 ];
+		}
+
+		$updatedRows = $this->query( $sqlWhereSegment, $boundValues );
+
+		$infoMessagePlaceholders = [ "method" => __METHOD__, "updatedRows" => $updatedRows, "table" => $table ];
+		$infoMessage             = Message::getMessage( "databaseConnection.debug.updateQuery", $infoMessagePlaceholders );
+		$this->logMessage( $infoMessage, LogLevel::INFO );
+
+		return $updatedRows;
 	}
 
-	private function buildUpdateSet( $set )
+
+	/**
+	 * This method builds the "SET field = placeholder" string of an update query.
+	 *
+	 * @param $set
+	 */
+	private
+	function buildUpdateSet( $set )
 	{
 		if( Arr::isAssoc( $set ) )
 		{
+			$sqlSetString = array_map( function ( $field )
+			{
+				return "`" . $field . "` = ?";
+			}, $set );
 
+			return join( ", ", $sqlSetString );
 		}
 
 		$message   = Message::getMessage( "databaseConnection.exceptions.updateSetValueInvalid" );
@@ -470,29 +521,13 @@ class DatabaseConnection
 		$this->addException( $exception );
 	}
 
-	private function buildUpdateWhere( $where )
-	{
-		if( is_numeric( $where ) )
-		{
-			//todo write code for where clause with id.
-		}
-		elseif( is_array( $where ) )
-		{
-			//todo write code to check if named or question placeholders
-		}
-		else
-		{
-			// todo throw exception
-		}
-	}
-
-
 	/**
 	 * If the logQuerys property is set to true it will return last query that was send to the database.
 	 * Otherwise it will throw an logic exception.
 	 * @return mixed
 	 */
-	public function getLastQuery()
+	public
+	function getLastQuery()
 	{
 		if( $this->logQuerys )
 		{
@@ -512,7 +547,8 @@ class DatabaseConnection
 	 * Otherwise it will throw an logic exception.
 	 * @return array
 	 */
-	public function getAllQuerys()
+	public
+	function getAllQuerys()
 	{
 		if( $this->logQuerys )
 		{
@@ -531,7 +567,8 @@ class DatabaseConnection
 	 * This method will get information about the database in an array.
 	 * @return array
 	 */
-	public function getDatabaseInfo()
+	public
+	function getDatabaseInfo()
 	{
 		if( $this->connection == null )
 		{
@@ -556,7 +593,8 @@ class DatabaseConnection
 		return $data;
 	}
 
-	private function logMessage( $message, $type )
+	private
+	function logMessage( $message, $type )
 	{
 		if( Logger::getTypeLevel( $type ) >= $this->logLevel )
 		{
@@ -567,7 +605,8 @@ class DatabaseConnection
 		}
 	}
 
-	private function addException( $exception )
+	private
+	function addException( $exception )
 	{
 		if( $this->throwExceptions )
 		{
@@ -580,7 +619,8 @@ class DatabaseConnection
 		}
 	}
 
-	public function getDebugBar()
+	public
+	function getDebugBar()
 	{
 		return $this->debugBar;
 	}

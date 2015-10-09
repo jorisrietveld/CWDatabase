@@ -210,7 +210,7 @@ $affectedRows = $databaseConnection->update( $table, $setShortcut, $whereClauseN
 $table  = "test.users";
 $fields = [ "name", "password" ];
 
-$whereClauseNamedPlaceholders        = [ "id = :id ", [ 1 ] ];
+$whereClauseNamedPlaceholders = [ "id = :id ", [ ":id" => 1 ] ];
 $whereClauseQuestionMarkPlaceholders = [ "id = ? ", [ 1 ] ];
 
 // With named placeholders

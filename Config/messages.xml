@@ -13,6 +13,9 @@
             <updateSetValueInvalid>
                 The $set argument must be an associative array with the field => updateValue.
             </updateSetValueInvalid>
+            <invalidWhereArgument>
+                The argument $where is not an integer or an associate array.
+            </invalidWhereArgument>
         </exceptions>
         <debug>
             <openConnection>
@@ -22,13 +25,16 @@
                 From {{method}}, Delete query successful, rows deleted {{deletedRows}} rows from {{table}}.
             </deleteQuery>
             <insertQuery>
-                From {{method}}, Insert query successful, inserted {{insertedRows}} rows in {{table}}
+                From {{method}}, Insert query successful, inserted {{insertedRows}} rows in {{table}}.
             </insertQuery>
             <selectQuery>
                 From {{method}}, Selected query successful, selected {{selectedRows}} rows from {{table}}.
             </selectQuery>
+            <updateQuery>
+                From {{method}}, Update query successful, updated {{updatedRows}} rows from {{table}}.
+            </updateQuery>
             <query>
-                From {{method}}, Performed an query: {{sql}} Values {{values}}
+                From {{method}}, Performed an query: {{sql}} - Values {{values}}
             </query>
         </debug>
     </databaseConnection>

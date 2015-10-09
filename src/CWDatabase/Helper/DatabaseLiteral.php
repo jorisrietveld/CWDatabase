@@ -15,7 +15,7 @@ class DatabaseLiteral
 		$this->literal = $literal;
 	}
 
-	public function getLiteral()
+	public function __toString()
 	{
 		return $this->literal;
 	}
