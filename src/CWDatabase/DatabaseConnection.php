@@ -7,6 +7,10 @@
 namespace CWDatabase;
 
 use CWDatabase\Drivers\DriverFactory;
+use CWDatabase\Drivers\DriverInterface;
+use CWDatabase\Drivers\MysqlDriver;
+use CWDatabase\Drivers\SqlightDriver;
+use CWDatabase\Drivers\SqlServerDriver;
 use CWDatabase\Helper\Logger;
 use CWDatabase\Helper\Message;
 use CWDatabase\Helper\QueryLogger;
@@ -30,16 +34,62 @@ class DatabaseConnection
 	 * 4 = log log emergency, alert, critical, error, warning, notice, info, debug
 	 */
 	private $logLevel = 4;
+
+	/**
+	 * An instance of the StandardDebugBar for logging debug information or null.
+	 *
+	 * @var null|StandardDebugBar
+	 */
 	private $debugBar;
 
-	protected $config      = [ ];
-	protected $driver      = null;
-	protected $connection  = null;
+	/**
+	 * An array with configuration for opening an database connection or for creating an driver or an empty array.
+	 *
+	 * @var array
+	 */
+	protected $config = [ ];
+
+	/**
+	 * An instance of an driver that implements Drivers\DriverInterface or null.
+	 *
+	 * @var null|MysqlDriver|SqlightDriver|SqlServerDriver
+	 */
+	protected $driver = null;
+
+	/**
+	 * A instance of PDO for communicating to an database or null.
+	 *
+	 * @var null|\PDO
+	 */
+	protected $connection = null;
+
+	/**
+	 * An instance of Helper\QueryLogger for recording query's send to the database.
+	 *
+	 * @var null|Helper\QueryLogger
+	 */
 	protected $queryLogger = null;
 
-	public $logQuerys       = true;
+	/**
+	 * An boolean that switches the logging of query's that are send to the database.
+	 *
+	 * @var bool
+	 */
+	public $logQuerys = true;
+
+	/**
+	 * An boolean that switches the behavior in case of an exception.
+	 *
+	 * @var bool
+	 */
 	public $throwExceptions = true;
 
+	/**
+	 * This method initializes some default settings from this object.
+	 *
+	 * @param array                           $config
+	 * @param \DebugBar\StandardDebugBar|null $debugBar
+	 */
 	public function __construct( Array $config = [ ], StandardDebugBar $debugBar = null )
 	{
 		$this->config = $config;
@@ -53,8 +103,10 @@ class DatabaseConnection
 	}
 
 	/**
-	 * @param array $config
+	 * Get an pdo instance that is saved in the connection property or attempt to open a new connection and save it to
+	 * the connection property.
 	 *
+	 * @param array $config
 	 * @return null
 	 */
 	public function getConnection( Array $config = [ ] )
@@ -111,7 +163,6 @@ class DatabaseConnection
 	 * PDO::Query can't perform like setting a charset, collation, timezone or default database.
 	 *
 	 * @param $sql
-	 *
 	 * @return int
 	 */
 	public function rawSqlStatement( $sql )
@@ -131,7 +182,6 @@ class DatabaseConnection
 	 * with unfiltered user input because it has no security against SQL injections. It returns an PDO::Statment object.
 	 *
 	 * @param $sql
-	 *
 	 * @return \PDOStatement
 	 */
 	public function rawQuery( $sql )
@@ -153,7 +203,6 @@ class DatabaseConnection
 	 *
 	 * @param $sql
 	 * @param $parameters
-	 *
 	 * @return bool|mixed
 	 */
 	public function query( $sql, $parameters = [ ] )
@@ -163,9 +212,10 @@ class DatabaseConnection
 		if( $this->logQuerys )
 		{
 			$this->queryLogger->log( __METHOD__, $sql, $parameters );
+			var_dump( $this->getAllQuerys());
 		}
 
-		// TODO: complete code to insert literals
+		// TODO: complete code to insert unprepared literals like NOW()
 
 		$pdoStatement = $this->connection->prepare( $sql );
 
@@ -186,6 +236,12 @@ class DatabaseConnection
 		return false;
 	}
 
+	/**
+	 * TODO finish this method so database literals can be used.
+	 *
+	 * @param array $parameters
+	 * @return array|bool
+	 */
 	public function checkLiterals( Array $parameters )
 	{
 		echo "<h3>" . __METHOD__ . "</h3>";
@@ -219,7 +275,6 @@ class DatabaseConnection
 	 *
 	 * @param $pdoStatement
 	 * @param $values
-	 *
 	 * @return mixed
 	 */
 	protected function bindValues( $pdoStatement, $values )
@@ -233,7 +288,6 @@ class DatabaseConnection
 		}
 		else
 		{
-			var_dump( $values );
 			foreach( $values as $key => $parameter )
 			{
 				$pdoStatement->bindValue( ( $key + 1 ), $parameter );
@@ -245,13 +299,11 @@ class DatabaseConnection
 
 	/**
 	 * Select a data set from the connected database.
-
-*
-	 * @param array                $fields
+	 *
+	 * @param array $fields
 	 * @param        $table
 	 * @param array  $where
 	 * @param string $order
-	 *
 	 * @return bool|mixed
 	 */
 	public function select( $table, Array $fields, Array $where = [ ], $order = "" )
@@ -345,7 +397,6 @@ class DatabaseConnection
 	 *
 	 * @param $baseSql
 	 * @param $values
-	 *
 	 * @return array
 	 */
 	private function buildInsertStringQuestionMarks( $baseSql, $values )
@@ -371,7 +422,6 @@ class DatabaseConnection
 	 *
 	 * @param $baseSql
 	 * @param $values
-	 *
 	 * @return string
 	 */
 	private function buildInsertString( $baseSql, $values )
@@ -402,7 +452,6 @@ class DatabaseConnection
 	 *
 	 * @param $table
 	 * @param $id
-	 *
 	 * @return mixed
 	 */
 	public function delete( $table, $id )
@@ -425,7 +474,6 @@ class DatabaseConnection
 	 *
 	 * @param       $table
 	 * @param array $where
-	 *
 	 * @return mixed
 	 */
 	public function deleteWhere( $table, Array $where = [ ] )
@@ -437,7 +485,6 @@ class DatabaseConnection
 		{
 			$sql .= $where[ 0 ];
 			$values = $where[ 1 ];
-			var_dump( $where );
 		}
 
 		$pdoStatement = $this->query( $sql, $values );
@@ -459,36 +506,58 @@ class DatabaseConnection
 	 * @param       $table
 	 * @param array $set
 	 * @param       $where
-	 *
 	 * @return bool|mixed
 	 */
 	public function update( $table, array $set, $where )
 	{
 		$sql = "UPDATE {$table} SET ";
 
-		$sqlSetSegment   = $this->buildUpdateSet( $set );
-		$sqlWhereSegment = "WHERE ";
-
 		$boundValues = [ ];
 
-		if( is_int( $where ) )
+		// Check if the set values are valid like: [ "fieldName" => "setToValue" ].
+		if( Arr::isNumeric( $set ) )
 		{
-			$sqlWhereSegment .= " `id` = ? ";
-			$boundValues[] = $where;
-		}
-		elseif( empty( $where[ 1 ] ) )
-		{
-			$message   = Message::getMessage( "databaseConnection.exceptions.invalidWhereArgument" );
+			$message   = Message::getMessage( "databaseConnection.exceptions.invalidSetArgument" );
 			$exception = new \InvalidArgumentException( $message );
 			$this->addException( $exception );
 		}
 		else
 		{
-			$sqlWhereSegment .= $where[ 0 ];
-			$boundValues = $where[ 1 ];
+			// Get the values from from the set argument so they can later be bound to query placeholders.
+			$boundValues = array_values( $set );
 		}
 
-		$updatedRows = $this->query( $sqlWhereSegment, $boundValues );
+		// Get the generated sql set part.
+		$sqlSetSegment = $this->buildUpdateSet( $set );
+
+		$sqlWhereSegment = "WHERE ";
+
+		// It is possible to pass an integer in the where argument, the where clause will then filter by id.
+		if( is_int( $where ) )
+		{
+			$whereType = 0;
+			$sqlWhereSegment .= " `id` = ? ";
+			$boundValues[] = $where;
+		}
+		// The where argument is if the wrong type or has an invalid amount of values, so throw an exception.
+		elseif( empty( $where[ 1 ] ) )
+		{
+
+			$message   = Message::getMessage( "databaseConnection.exceptions.invalidWhereArgument" );
+			$exception = new \InvalidArgumentException( $message );
+			$this->addException( $exception );
+		}
+		// Everything is valid so append the where clause to the sql segment and append the values to the boundValues array.
+		else
+		{
+			$sqlWhereSegment .= $where[ 0 ];
+			$boundValues = array_merge( $boundValues, $where[ 1 ]);
+		}
+
+		$sql = $sql . $sqlSetSegment . $sqlWhereSegment;
+
+		$pdoStatement = $this->query( $sql, $boundValues );
+		$updatedRows  = $pdoStatement->rowCount();
 
 		$infoMessagePlaceholders = [ "method" => __METHOD__, "updatedRows" => $updatedRows, "table" => $table ];
 		$infoMessage             = Message::getMessage( "databaseConnection.debug.updateQuery", $infoMessagePlaceholders );
@@ -503,17 +572,18 @@ class DatabaseConnection
 	 *
 	 * @param $set
 	 */
-	private
-	function buildUpdateSet( $set )
+	private function buildUpdateSet( $set )
 	{
 		if( Arr::isAssoc( $set ) )
 		{
+			// Add sql markup around the fieldsNames like: `Fields` = ?
 			$sqlSetString = array_map( function ( $field )
 			{
 				return "`" . $field . "` = ?";
-			}, $set );
+			}, array_keys( $set ) );
 
-			return join( ", ", $sqlSetString );
+			// sqlSetString is now an array with the values like [ "`$Fields` = ?" ] now join them with commas and return.
+			return join( ", ", $sqlSetString ) . " ";
 		}
 
 		$message   = Message::getMessage( "databaseConnection.exceptions.updateSetValueInvalid" );
@@ -524,10 +594,11 @@ class DatabaseConnection
 	/**
 	 * If the logQuerys property is set to true it will return last query that was send to the database.
 	 * Otherwise it will throw an logic exception.
-	 * @return mixed
+
+	 *
+*@return mixed
 	 */
-	public
-	function getLastQuery()
+	public function getLastQuery()
 	{
 		if( $this->logQuerys )
 		{
@@ -545,10 +616,11 @@ class DatabaseConnection
 	/**
 	 * If the logQuerys property is set to true it will return all the query's that where send to the database.
 	 * Otherwise it will throw an logic exception.
-	 * @return array
+
+	 *
+*@return array
 	 */
-	public
-	function getAllQuerys()
+	public function getAllQuerys()
 	{
 		if( $this->logQuerys )
 		{
@@ -565,10 +637,11 @@ class DatabaseConnection
 
 	/**
 	 * This method will get information about the database in an array.
-	 * @return array
+
+	 *
+*@return array
 	 */
-	public
-	function getDatabaseInfo()
+	public function getDatabaseInfo()
 	{
 		if( $this->connection == null )
 		{
@@ -593,10 +666,9 @@ class DatabaseConnection
 		return $data;
 	}
 
-	private
-	function logMessage( $message, $type )
+	private function logMessage( $message, $type )
 	{
-		if( Logger::getTypeLevel( $type ) >= $this->logLevel )
+		if( Logger::getTypeLevel( $type ) <= $this->logLevel )
 		{
 			if( $this->debugBar != null )
 			{
@@ -605,22 +677,24 @@ class DatabaseConnection
 		}
 	}
 
-	private
-	function addException( $exception )
+	private function addException( $exception )
 	{
 		if( $this->throwExceptions )
 		{
 			throw $exception;
 		}
-
-		if( $this->debugBar != null )
+		elseif( $this->debugBar != null )
 		{
 			$this->debugBar[ 'exceptions' ]->addException( $exception );
 		}
+		else
+		{
+
+		}
+
 	}
 
-	public
-	function getDebugBar()
+	public function getDebugBar()
 	{
 		return $this->debugBar;
 	}

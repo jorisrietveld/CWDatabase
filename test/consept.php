@@ -8,11 +8,28 @@
 // Require the composer autoloader and some basic config.
 require( "header.php" );
 
+// If everything goes wrong
+register_shutdown_function( function () use ( &$debugBar )
+{
+	$error = error_get_last();
+	if( $error[ "type" ] == E_ERROR )
+	{
+		$debugBar[ "messages" ]->fatal( $error[ "message" ] );
+	}
+	\CWDatabase\Helper\DebugBar::render( $debugBar );
+} );
+
 // Set an handler for un caught exceptions
 set_exception_handler( function ( $exception ) use ( &$debugbar )
 {
 	$debugbar[ 'exceptions' ]->addException( $exception );
 } );
+
+// Convert errors in exceptions
+set_error_handler( function ( $errorNumber, $errorMessage, $errorFile, $errorLine, $context = null ) use ( &$debugBar )
+{
+	throw new \ErrorException( $errorMessage, 0, $errorNumber, $errorFile, $errorLine );
+}, E_ALL );
 
 // Log everything to debugbar
 define( "LOG_TO_DEBUG_BAR", true );
@@ -52,7 +69,7 @@ if( true || MASTER_SWITCH )
 	echo "<h3>Connect to database</h3>";
 	var_dump( $databaseConnection );
 }
-
+echo "<hr>";
 if( false || MASTER_SWITCH )
 {
 	/**
@@ -64,7 +81,7 @@ if( false || MASTER_SWITCH )
 	echo "<h3>Get database connection</h3>";
 	var_dump( $databaseConn );
 }
-
+echo "<hr>";
 if( false || MASTER_SWITCH )
 {
 	/**
@@ -72,6 +89,7 @@ if( false || MASTER_SWITCH )
 	 */
 	$databaseConnection->logQuerys = true;
 }
+echo "<hr>";
 if( false || MASTER_SWITCH )
 {
 	/**
@@ -80,6 +98,7 @@ if( false || MASTER_SWITCH )
 	echo "<h3>Get database info</h3>";
 	var_dump( $databaseConnection->getDatabaseInfo() );
 }
+echo "<hr>";
 if( false || MASTER_SWITCH )
 {
 	/**
@@ -96,6 +115,7 @@ if( false || MASTER_SWITCH )
 	echo "<h3>Get all querys</h3>";
 	var_dump( $databaseConnection->getAllQuerys() );
 }
+echo "<hr>";
 if( false || MASTER_SWITCH )
 {
 	/**
@@ -105,6 +125,7 @@ if( false || MASTER_SWITCH )
 	echo "<h3>Get the current driver</h3>";
 	var_dump( $databaseConnection->getDriver() );
 }
+echo "<hr>";
 if( false || MASTER_SWITCH )
 {
 	/**
@@ -132,6 +153,7 @@ if( false || MASTER_SWITCH )
 		var_dump( $e );
 	}
 }
+echo "<hr>";
 if( false || MASTER_SWITCH )
 {
 	/**
@@ -165,6 +187,7 @@ if( false || MASTER_SWITCH )
 		var_dump( $e );
 	}
 }
+echo "<hr>";
 if( false || MASTER_SWITCH )
 {
 	/**
@@ -211,6 +234,7 @@ if( false || MASTER_SWITCH )
 		var_dump( $databaseConnection );
 	}
 }
+echo "<hr>";
 if( false || MASTER_SWITCH )
 {
 	try
@@ -267,6 +291,7 @@ if( false || MASTER_SWITCH )
 		var_dump( $e );
 	}
 }
+echo "<hr>";
 if( false || MASTER_SWITCH )
 {
 	try
@@ -298,6 +323,7 @@ if( false || MASTER_SWITCH )
 		var_dump( $e );
 	}
 }
+echo "<hr>";
 if( false || MASTER_SWITCH )
 {
 	try
@@ -318,6 +344,7 @@ if( false || MASTER_SWITCH )
 
 		echo "<h3>DeleteWhere named placeholders</h3>";
 		var_dump( $databaseConnection->deleteWhere( $table, $whereClauseNamedPlaceholders ) );
+
 	}
 	catch( PDOException $pdoException )
 	{
@@ -336,17 +363,18 @@ if( false || MASTER_SWITCH )
 		var_dump( $e );
 	}
 }
+echo "<hr>";
 if( false || MASTER_SWITCH )
 {
 	try
 	{
+		echo "<h3>Update shortcut (table, set, id)</h3>";
 		$table = "test.users";
 
-		// update shortcut where id
-		$setShortcut = [ "name" => "ting" ];
+		// update where id
+		$setShortcut = [ "name" => "newName" ];
 		$id          = 7;
-
-		"<h3>Update shortcut (table, set, id)</h3>";
+		$whereClause = [ "id = :id", [ ":id" => 1 ] ];
 
 		var_dump( $databaseConnection->update( $table, $setShortcut, $id ) );
 	}
@@ -355,10 +383,7 @@ if( false || MASTER_SWITCH )
 		$debugbar[ 'exceptions' ]->addException( $pdoException );
 
 		echo "<h3>An pdo exception was thrown</h3>";
-		var_dump( $e );
-
-		echo "<h3>database connection</h3>";
-		var_dump( $databaseConnection );
+		var_dump( $pdoException );
 	}
 	catch( Exception $e )
 	{
@@ -371,80 +396,13 @@ if( false || MASTER_SWITCH )
 {
 	try
 	{
+		echo "<h3>Update statement ( table, set, where clause )</h3>";
 		$table = "test.users";
 
-		// Set with named placeholder values
-		$setWithPlaceholdersValues = [
-			":name"     => "newName",
-			":password" => "newPassword"
-		];
+		$setShortcut = [ "name" => "newName", "password" => "newPassword" ];
+		$whereClause = [ "`id` = ? ", [ 1 ] ];
 
-		$setWithPlaceholders = [
-			"name"     => ":name",
-			"password" => ":password",
-			$setWithPlaceholdersValues
-		];
-
-		// Set with question mark placeholder values
-		$setWithQuestionMarkValues = [
-			"newName",
-			"newPassword"
-		];
-
-		$setWithQuestionMarkPlaceholders = [
-			"name",
-			"password",
-			$setWithQuestionMarkValues
-		];
-
-		/*	echo "<h3>Update set with named placeholder values and</h3>";
-			var_dump( $databaseConnection->update( $table, $setWithPlaceholdersValues, 1 ) );
-
-			echo "<h3>Update wet with question mark placeholders values</h3>";*/
-
-
-	}
-	catch( PDOException $pdoException )
-	{
-		$debugbar[ 'exceptions' ]->addException( $pdoException );
-
-		echo "<h3>An pdo exception was thrown</h3>";
-		var_dump( $e );
-
-		echo "<h3>database connection</h3>";
-		var_dump( $databaseConnection );
-	}
-	catch( Exception $e )
-	{
-		$debugbar[ 'exceptions' ]->addException( $e );
-		echo "<h3>An exception was thrown</h3>";
-		var_dump( $e );
-	}
-}
-if( false || MASTER_SWITCH )
-{
-	try
-	{
-		$table  = "test.users";
-		$fields = [ "name", "password" ];
-
-		$whereClauseNamedPlaceholders        = [ "id = :id ", [ 1 ] ];
-		$whereClauseQuestionMarkPlaceholders = [ "id = ? ", [ 1 ] ];
-
-		echo "<h3>Select data with where clause with named placeholders</h3>";
-		$pdoStatement = $databaseConnection->select( $table, $fields, $whereClauseNamedPlaceholders );
-
-		var_dump( $pdoStatement );
-		echo "<h4>result</h4>";
-		var_dump( $pdoStatement->fetchAll() );
-
-		echo "<h3>Select data with where clause with question mark placeholders</h3>";
-		$pdoStatement = $databaseConnection->select( $table, $fields, $whereClauseQuestionMarkPlaceholders );
-		var_dump( $pdoStatement );
-
-		echo "<h4>result</h4>";
-		var_dump( $pdoStatement->fetchAll() );
-
+		var_dump( $databaseConnection->update( $table, $setShortcut, $whereClause ) );
 	}
 	catch( PDOException $pdoException )
 	{
@@ -452,9 +410,6 @@ if( false || MASTER_SWITCH )
 
 		echo "<h3>An pdo exception was thrown</h3>";
 		var_dump( $pdoException );
-
-		echo "<h3>database connection</h3>";
-		var_dump( $databaseConnection );
 	}
 	catch( Exception $e )
 	{
@@ -463,56 +418,10 @@ if( false || MASTER_SWITCH )
 		var_dump( $e );
 	}
 }
-if( false || MASTER_SWITCH )
-{
-	try
-	{
+echo "<hr>";
+echo "<hr>";
+echo "<hr>";
 
-	}
-	catch( PDOException $pdoException )
-	{
-		$debugbar[ 'exceptions' ]->addException( $pdoException );
-
-		echo "<h3>An pdo exception was thrown</h3>";
-		var_dump( $e );
-
-		echo "<h3>database connection</h3>";
-		var_dump( $databaseConnection );
-	}
-	catch( Exception $e )
-	{
-		$debugbar[ 'exceptions' ]->addException( $e );
-		echo "<h3>An exception was thrown</h3>";
-		var_dump( $e );
-	}
-}
-if( false || MASTER_SWITCH )
-{
-	try
-	{
-
-	}
-	catch( PDOException $pdoException )
-	{
-		$debugbar[ 'exceptions' ]->addException( $pdoException );
-
-		echo "<h3>An pdo exception was thrown</h3>";
-		var_dump( $e );
-
-		echo "<h3>database connection</h3>";
-		var_dump( $databaseConnection );
-	}
-	catch( Exception $e )
-	{
-		$debugbar[ 'exceptions' ]->addException( $e );
-		echo "<h3>An exception was thrown</h3>";
-		var_dump( $e );
-	}
-}
-if( false )
-{
-
-}
 $debugBar = $databaseConnection->getDebugBar();
 
 \CWDatabase\Helper\DebugBar::render( $debugBar );

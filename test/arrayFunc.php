@@ -6,17 +6,37 @@
 
 require( "header.php" );
 
-$array = [ "name", "password", "age" ];
+$array = array_keys( [ "name" => "nName", "password" => "nName", "age" => "nName" ] );
 
-/**
- *
- */
-$array = [ "name", "password", "age" ];
-
-$result = rtrim( join( ", ", array_map( function ( $array )
+$sqlSetString = array_map( function ( $field )
 {
-	return "`" . $array . "` = ?";
-}, $array ) ), "`", "' " );
+	return "`" . $field . "` = ?";
+}, $array );
 
-var_dump( $result );
-var_dump( $array );
+var_dump( $sqlSetString );
+
+echo "<h3>Test CWDatabase/helper/Arr:: </h3>";
+
+$numArray   = range( 0, 20 );
+$assocArray = [ ];
+
+foreach( $numArray as $key => $value )
+{
+	$assocArray[ "blabla" . $value ] = $value;
+}
+
+echo "<h3>numeric array</h3>";
+var_dump( $numArray );
+
+echo "<h3>associate array</h3>";
+var_dump( $assocArray );
+
+echo "<h3>numeric array arr::isAssoc()</h3>";
+var_dump( \CWDatabase\Helper\Arr::isAssoc( $numArray ) );
+echo "<h3>numeric array arr::isNumeric()</h3>";
+var_dump( \CWDatabase\Helper\Arr::isNumeric( $numArray ) );
+
+echo "<h3>assoc array arr::isAssoc()</h3>";
+var_dump( \CWDatabase\Helper\Arr::isAssoc( $assocArray ) );
+echo "<h3>assoc array arr::isNumeric()</h3>";
+var_dump( \CWDatabase\Helper\Arr::isNumeric( $assocArray ) );

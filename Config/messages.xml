@@ -16,6 +16,9 @@
             <invalidWhereArgument>
                 The argument $where is not an integer or an associate array.
             </invalidWhereArgument>
+            <invalidSetArgument>
+                The argument $set is not an array.
+            </invalidSetArgument>
         </exceptions>
         <debug>
             <openConnection>

@@ -9,16 +9,28 @@ namespace CWDatabase\Helper;
 class Arr
 {
 	/**
-	 * Checks whether an array is an associative or numeric
-	 *
-*@param $array
+	 * Checks whether an array is an associative.
 
-	 *
-*@return bool
+*
+	 * @param $array
+
+	 * @return bool
 	 */
 	public static function isAssoc( Array $array )
 	{
 		return array_keys( $array ) !== range( 0, count( $array ) - 1 );
+	}
+
+	/**
+	 * Checks whether an array is numeric.
+	 *
+	 * @param $array
+	 *
+	 * @return bool
+	 */
+	public static function isNumeric( Array $array )
+	{
+		return ( array_keys( $array ) !== range( 0, count( $array ) - 1 ) ) ? false : true;
 	}
 
 	/**
@@ -125,11 +137,10 @@ class Arr
 
 	/**
 	 * Convert an object to an array.
-	 *
-*@param $object
 
-	 *
-*@return array
+*
+*@param $object
+	 * @return array
 	 */
 	public static function objectToArray( $object )
 	{

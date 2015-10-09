@@ -10,11 +10,17 @@ use DebugBar\StandardDebugBar;
 use PDO;
 
 
+/**
+ * Class Driver
+ *
+ * @package CWDatabase\Drivers
+ */
 class Driver
 {
 	/**
-	 * This are the default database driver options for opening an connection to the database.
-	 * @var array
+	 * This are the default \PDO connection options for opening an connection to the database.
+	 *
+*@var array
 	 */
 	protected $options = [
 		PDO::ATTR_EMULATE_PREPARES  => false,
@@ -25,10 +31,12 @@ class Driver
 	];
 
 	/**
-	 * Get the options for an connection.
+	 * Get all options configured to open an connection to the database And optionally add/chance other options with
+	 * the $config argument.
+
 	 *
-	 * @param array $config
-	 *
+*@param array $config
+
 	 * @return array
 	 */
 	public function getOptions( Array $config )
@@ -39,12 +47,13 @@ class Driver
 	}
 
 	/**
-	 * Open an connection to an database.
+	 * Attempt to open an connection to a database using \PDO and return an PDO instance.
+
 	 *
-	 * @param       $dsn
+*@param       $dsn
 	 * @param array $config
 	 * @param array $options
-	 *
+
 	 * @return PDO
 	 */
 	public function openConnection( $dsn, array $config, array $options )

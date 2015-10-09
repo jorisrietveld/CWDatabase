@@ -20,8 +20,9 @@ use CWDatabase\Drivers\SqlightDriver;
 class DriverFactory
 {
 	/**
-	 * @param array $config
+	 * Search in the configuration for the driver key and return an driver instance that implements the DriverInterface.
 	 *
+*@param array $config
 	 * @return \CWDatabase\Drivers\MysqlDriver|\CWDatabase\Drivers\SqlightDriver|\CWDatabase\Drivers\SqlServerDriver
 	 */
 	public function createDriver( Array $config  )
