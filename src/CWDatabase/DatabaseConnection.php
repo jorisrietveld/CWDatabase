@@ -17,7 +17,7 @@ use CWDatabase\Helper\QueryLogger;
 use CWDatabase\Helper\Arr;
 use CWDatabase\Helper\Str;
 use DebugBar\StandardDebugBar;
-use Psr\Log\LogLevel;
+//use Psr\Log\LogLevel as LogLevel;
 
 use \InvalidArgumentException;
 use \PDO;
@@ -33,7 +33,7 @@ class DatabaseConnection
 	 * 3 = log emergency, alert, critical, error, warning, notice, info
 	 * 4 = log log emergency, alert, critical, error, warning, notice, info, debug
 	 */
-	private $logLevel = 4;
+	private $logLevel = 2;
 
 	/**
 	 * An instance of the StandardDebugBar for logging debug information or null.
@@ -75,7 +75,7 @@ class DatabaseConnection
 	 *
 	 * @var bool
 	 */
-	public $logQuerys = true;
+	public $logQuerys = false;
 
 	/**
 	 * An boolean that switches the behavior in case of an exception.
@@ -94,12 +94,9 @@ class DatabaseConnection
 	{
 		$this->config = $config;
 
-		if( $this->logQuerys )
-		{
-			$this->queryLogger = new QueryLogger();
-		}
+		$this->queryLogger = new QueryLogger();
 
-		$this->debugBar = $debugBar;
+		//$this->debugBar = $debugBar;
 	}
 
 	/**
@@ -212,7 +209,6 @@ class DatabaseConnection
 		if( $this->logQuerys )
 		{
 			$this->queryLogger->log( __METHOD__, $sql, $parameters );
-			var_dump( $this->getAllQuerys());
 		}
 
 		// TODO: complete code to insert unprepared literals like NOW()
@@ -228,7 +224,7 @@ class DatabaseConnection
 		{
 			$debugMessagePlaceholders = [ "method" => __METHOD__, "sql" => $sql, "values" => join( ", ", $parameters ) ];
 			$debugMessage             = Message::getMessage( "databaseConnection.debug.query", $debugMessagePlaceholders );
-			$this->logMessage( $debugMessage, LogLevel::DEBUG );
+			$this->logMessage( $debugMessage, "debug" );
 
 			return $pdoStatement;
 		}
@@ -326,16 +322,18 @@ class DatabaseConnection
 		{
 			$pdoStatement = $this->query( $sql, $valuesWhereClause );
 		}
+		else
+		{
+			$pdoStatement = $this->query( $sql, [ ] );
+		}
 
-		$pdoStatement = $this->query( $sql, [ ] );
-
-		if( $pdoStatement )
+		if( $pdoStatement->execute() )
 		{
 			$rowCount = $pdoStatement->rowCount();
 
 			$infoMessagePlaceholders = [ "method" => __METHOD__, "selectedRows" => $rowCount, "table" => $table ];
 			$infoMessage             = Message::getMessage( "databaseConnection.debug.selectQuery", $infoMessagePlaceholders );
-			$this->logMessage( $infoMessage, LogLevel::INFO );
+			$this->logMessage( $infoMessage, "info" );
 		}
 
 		return $pdoStatement;
@@ -385,7 +383,7 @@ class DatabaseConnection
 
 		$infoMessagePlaceholders = [ "method" => __METHOD__, "table" => $table, "insertedRows" => $rowCount ];
 		$infoMessage             = Message::getMessage( "databaseConnection.debug.insertQuery", $infoMessagePlaceholders );
-		$this->logMessage( $infoMessage, LogLevel::INFO );
+		$this->logMessage( $infoMessage, "info" );
 
 		return $rowCount;
 	}
@@ -464,7 +462,7 @@ class DatabaseConnection
 
 		$infoMessagePlaceholders = [ "method" => __METHOD__, "deletedRows" => $deletedRows, "table" => $table ];
 		$infoMessage             = Message::getMessage( "databaseConnection.debug.deleteQuery", $infoMessagePlaceholders );
-		$this->logMessage( $infoMessage, LogLevel::INFO );
+		$this->logMessage( $infoMessage, "info" );
 
 		return $deletedRows;
 	}
@@ -492,7 +490,7 @@ class DatabaseConnection
 
 		$infoMessagePlaceholders = [ "method" => __METHOD__, "deletedRows" => $deletedRows, "table" => $table ];
 		$infoMessage             = Message::getMessage( "databaseConnection.debug.deleteQuery", $infoMessagePlaceholders );
-		$this->logMessage( $infoMessage, LogLevel::INFO );
+		$this->logMessage( $infoMessage, "info" );
 
 		return $deletedRows;
 
@@ -533,7 +531,7 @@ class DatabaseConnection
 		$sqlWhereSegment = "WHERE ";
 
 		// It is possible to pass an integer in the where argument, the where clause will then filter by id.
-		if( is_int( $where ) )
+		if( is_numeric( $where ) )
 		{
 			$whereType = 0;
 			$sqlWhereSegment .= " `id` = ? ";
@@ -561,7 +559,7 @@ class DatabaseConnection
 
 		$infoMessagePlaceholders = [ "method" => __METHOD__, "updatedRows" => $updatedRows, "table" => $table ];
 		$infoMessage             = Message::getMessage( "databaseConnection.debug.updateQuery", $infoMessagePlaceholders );
-		$this->logMessage( $infoMessage, LogLevel::INFO );
+		$this->logMessage( $infoMessage, "info" );
 
 		return $updatedRows;
 	}
@@ -600,7 +598,7 @@ class DatabaseConnection
 	 */
 	public function getLastQuery()
 	{
-		if( $this->logQuerys )
+		if( $this->logQuerys && $this->queryLogger )
 		{
 			return $this->queryLogger->getLast();
 		}
@@ -622,7 +620,7 @@ class DatabaseConnection
 	 */
 	public function getAllQuerys()
 	{
-		if( $this->logQuerys )
+		if( $this->logQuerys && $this->queryLogger )
 		{
 			return $this->queryLogger->getAll();
 		}
@@ -630,7 +628,7 @@ class DatabaseConnection
 		{
 			$message = Message::getMessage( "databaseConnection.exceptions.queryNotLogged" );
 
-			$exception = new \LogicException();
+			$exception = new \LogicException( $message );
 			$this->addException( $exception );
 		}
 	}
@@ -668,13 +666,13 @@ class DatabaseConnection
 
 	private function logMessage( $message, $type )
 	{
-		if( Logger::getTypeLevel( $type ) <= $this->logLevel )
+		/*if( Logger::getTypeLevel( $type ) <= $this->logLevel )
 		{
 			if( $this->debugBar != null )
 			{
 				$this->debugBar[ "messages" ]->{$type}( $message );
 			}
-		}
+		}*/
 	}
 
 	private function addException( $exception )
@@ -689,7 +687,7 @@ class DatabaseConnection
 		}
 		else
 		{
-
+			// TODO finish this!!!!
 		}
 
 	}

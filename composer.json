@@ -1,8 +1,6 @@
 {
-  "name": "jorisrietveld/database",
+  "name": "campuswerk/database",
   "description": "A simple database solution",
-  "minimum-stability": "dev",
-  "license": "GPLv3",
   "authors": [
     {
       "name": "Joris Rietveld",
@@ -11,6 +9,7 @@
   ],
   "require": {
     "maximebf/debugbar": "^1.10@dev",
-    "kriswallsmith/assetic": "^1.4@dev"
+    "kriswallsmith/assetic": "^1.4@dev",
+    "psr/log": "1.*"
   }
 }

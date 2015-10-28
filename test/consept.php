@@ -418,6 +418,31 @@ if( false || MASTER_SWITCH )
 		var_dump( $e );
 	}
 }
+if( false || MASTER_SWITCH )
+{
+	try
+	{
+		echo "<h3>Select statement</h3>";
+		$table = "test.users";
+
+		$fields = [ "username", "email", "password", "active" ];
+
+
+	}
+	catch( PDOException $pdoException )
+	{
+		$debugbar[ 'exceptions' ]->addException( $pdoException );
+
+		echo "<h3>An pdo exception was thrown</h3>";
+		var_dump( $pdoException );
+	}
+	catch( Exception $e )
+	{
+		$debugbar[ 'exceptions' ]->addException( $e );
+		echo "<h3>An exception was thrown</h3>";
+		var_dump( $e );
+	}
+}
 echo "<hr>";
 echo "<hr>";
 echo "<hr>";
